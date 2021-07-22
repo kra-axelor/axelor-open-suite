@@ -36,6 +36,14 @@
   <menuitem name="admin-root-app-management" parent="admin-root" order="5"
 	title="Apps management" action="admin.root.app.management" />
 	
+  <menuitem title="Printer" name="admin-root-maintenance-printer" parent="admin-root-maintenance"
+  action="action.admin.root.maintenance.printer"/>
+  
+    <action-view name="action.admin.root.maintenance.printer" title="Printer" model="com.axelor.apps.sentinel.db.Printer">
+  	<view type="grid" name="printer-grid"/>
+  	<view type="form" name="printer-form"/>
+  </action-view>
+	
   <action-view name="admin.root.app.management" title="Apps management"
 	model="com.axelor.apps.base.db.App" >
 	<view type="cards" name="app-cards"/>
