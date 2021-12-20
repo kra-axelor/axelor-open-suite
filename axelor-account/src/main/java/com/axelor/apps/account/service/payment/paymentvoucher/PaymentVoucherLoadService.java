@@ -17,6 +17,13 @@
  */
 package com.axelor.apps.account.service.payment.paymentvoucher;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import com.axelor.apps.account.db.Account;
 import com.axelor.apps.account.db.Invoice;
 import com.axelor.apps.account.db.Move;
@@ -39,12 +46,6 @@ import com.axelor.exception.db.repo.TraceBackRepository;
 import com.axelor.i18n.I18n;
 import com.axelor.inject.Beans;
 import com.google.inject.Inject;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 public class PaymentVoucherLoadService {
 
@@ -192,8 +193,13 @@ public class PaymentVoucherLoadService {
 
       if (payVoucherDueElement.isSelected()) {
 
-        paymentVoucher.addPayVoucherElementToPayListItem(
-            this.createPayVoucherElementToPay(payVoucherDueElement, sequence++));
+        PayVoucherElementToPay payVoucherElementToPay = this.createPayVoucherElementToPay(paymentVoucher, payVoucherDueElement, sequence++);
+		paymentVoucher.addPayVoucherElementToPayListItem(
+            payVoucherElementToPay);
+		
+		if (payVoucherElementToPay != null) {
+			paymentVoucher.setRemainingAmount(paymentVoucher.getRemainingAmount().subtract(payVoucherElementToPay.getAmountToPay()));
+		}
 
         // Remove the line from the due elements lists
         toRemove.add(payVoucherDueElement);
@@ -205,9 +211,8 @@ public class PaymentVoucherLoadService {
   }
 
   public PayVoucherElementToPay createPayVoucherElementToPay(
-      PayVoucherDueElement payVoucherDueElement, int sequence) throws AxelorException {
+      PaymentVoucher paymentVoucher, PayVoucherDueElement payVoucherDueElement, int sequence) throws AxelorException {
 
-    PaymentVoucher paymentVoucher = payVoucherDueElement.getPaymentVoucher();
     BigDecimal amountRemaining = paymentVoucher.getRemainingAmount();
     LocalDate paymentDate = paymentVoucher.getPaymentDate();
 
@@ -385,7 +390,7 @@ public class PaymentVoucherLoadService {
       if (invoice.equals(payVoucherDueElement.getMoveLine().getMove().getInvoice())
           && paymentVoucher.getCurrency().equals(payVoucherDueElement.getCurrency())) {
         paymentVoucher.addPayVoucherElementToPayListItem(
-            createPayVoucherElementToPay(payVoucherDueElement, ++sequence));
+            createPayVoucherElementToPay(paymentVoucher, payVoucherDueElement, ++sequence));
         it.remove();
       }
     }
