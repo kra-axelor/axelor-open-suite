@@ -17,6 +17,9 @@
  */
 package com.axelor.csv.script;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 import com.axelor.apps.account.db.Invoice;
 import com.axelor.apps.account.db.MoveLine;
 import com.axelor.apps.account.db.PayVoucherDueElement;
@@ -31,8 +34,6 @@ import com.axelor.exception.service.TraceBackService;
 import com.axelor.inject.Beans;
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
-import java.math.BigDecimal;
-import java.util.Map;
 
 public class ImportPaymentVoucher {
 
@@ -56,7 +57,7 @@ public class ImportPaymentVoucher {
         PayVoucherDueElement payVoucherDueElement =
             paymentVoucherLoadService.createPayVoucherDueElement(moveLineToPay);
         paymentVoucher.addPayVoucherElementToPayListItem(
-            paymentVoucherLoadService.createPayVoucherElementToPay(payVoucherDueElement, 1));
+            paymentVoucherLoadService.createPayVoucherElementToPay(paymentVoucher, payVoucherDueElement, 1));
       }
 
       if (paymentVoucher.getStatusSelect() == PaymentVoucherRepository.STATUS_CONFIRMED) {
