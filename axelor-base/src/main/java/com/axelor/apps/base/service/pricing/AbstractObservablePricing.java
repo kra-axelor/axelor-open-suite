@@ -2,71 +2,64 @@ package com.axelor.apps.base.service.pricing;
 
 import com.axelor.apps.base.db.Pricing;
 import com.axelor.apps.base.db.PricingRule;
+import com.axelor.event.Event;
+import com.axelor.event.NamedLiteral;
+import com.axelor.inject.Beans;
 import com.axelor.meta.db.MetaField;
-import java.util.ArrayList;
-import java.util.List;
 
-public abstract class AbstractObservablePricing implements ObservablePricing {
+public abstract class AbstractObservablePricing {
 
-  private final List<PricingObserver> observers = new ArrayList<>();
+  private Event<PricingComputerOperated> pricingComputerOperatedEvent;
 
-  /**
-   * Subscribe to the observable
-   *
-   * @param eventType
-   * @param observer
-   */
-  public void subscribe(PricingObserver observer) {
-    observers.add(observer);
+  protected AbstractObservablePricing() {
+    this.pricingComputerOperatedEvent = (Event<PricingComputerOperated>) Beans.get(Event.class);
   }
 
   /**
-   * Unsubscribe from the observable
-   *
-   * @param eventType
-   * @param observer
-   */
-  public void unsubscribe(PricingObserver observer) {
-    observers.remove(observer);
-  }
-
-  /**
-   * Notify observers which pricing is used
+   * Fires a axelor event of type pricing
    *
    * @param pricing
    */
   public void notifyPricing(Pricing pricing) {
-    observers.forEach(observer -> observer.updatePricing(pricing));
+
+    pricingComputerOperatedEvent
+        .select(NamedLiteral.of(PricingComputerOperated.OPERATION_PRICING))
+        .fire(PricingComputerOperated.on(pricing));
   }
 
   /**
-   * Notify observers that classification pricing rule pricingRule has been used and resulted in
-   * result.
+   * Fires a axelor event of type classfication pricing rule
    *
    * @param pricingRule
    * @param result
    */
   public void notifyClassificationPricingRule(PricingRule pricingRule, Object result) {
-    observers.forEach(observer -> observer.updateClassificationPricingRule(pricingRule, result));
+    pricingComputerOperatedEvent
+        .select(NamedLiteral.of(PricingComputerOperated.OPERATION_CLASS_PRICING_RULE))
+        .fire(PricingComputerOperated.on(pricingRule, result));
   }
 
   /**
-   * Notify observers that result pricing rule pricingRule has been used and resulted in result.
+   * Fires a axelor event of type result pricing rule
    *
    * @param pricingRule
    * @param result
    */
   public void notifyResultPricingRule(PricingRule pricingRule, Object result) {
-    observers.forEach(observer -> observer.updateResultPricingRule(pricingRule, result));
+    pricingComputerOperatedEvent
+        .select(NamedLiteral.of(PricingComputerOperated.OPERATION_RES_PRICING_RULE))
+        .fire(PricingComputerOperated.on(pricingRule, result));
   }
 
   /**
-   * Notify observers that field to populate is field
+   * Fires a axelor event of type metafield populated
    *
    * @param pricingRule
    * @param result
    */
   public void notifyFieldToPopulate(MetaField field) {
-    observers.forEach(observer -> observer.updateFieldToPopulate(field));
+    pricingComputerOperatedEvent
+        .select(NamedLiteral.of(PricingComputerOperated.OPERATION_METAFIELD_POPULATED))
+        .fire(PricingComputerOperated.on(field));
   }
 }

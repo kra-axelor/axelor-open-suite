@@ -17,6 +17,21 @@
  */
 package com.axelor.apps.sale.service.saleorder;
 
+import java.lang.invoke.MethodHandles;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.axelor.apps.account.db.FiscalPosition;
 import com.axelor.apps.account.db.TaxEquiv;
 import com.axelor.apps.account.db.TaxLine;
@@ -35,6 +50,7 @@ import com.axelor.apps.base.service.ProductCompanyService;
 import com.axelor.apps.base.service.ProductMultipleQtyService;
 import com.axelor.apps.base.service.app.AppBaseService;
 import com.axelor.apps.base.service.pricing.PricingComputer;
+import com.axelor.apps.base.service.pricing.PricingComputerLogObserver;
 import com.axelor.apps.base.service.pricing.PricingService;
 import com.axelor.apps.base.service.tax.AccountManagementService;
 import com.axelor.apps.sale.db.ComplementaryProduct;
@@ -59,19 +75,6 @@ import com.axelor.meta.loader.ModuleManager;
 import com.axelor.rpc.ActionResponse;
 import com.axelor.rpc.Context;
 import com.google.inject.Inject;
-import java.lang.invoke.MethodHandles;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SaleOrderLineServiceImpl implements SaleOrderLineService {
 
@@ -137,6 +140,7 @@ public class SaleOrderLineServiceImpl implements SaleOrderLineService {
   public void computePricingScale(SaleOrderLine saleOrderLine, SaleOrder saleOrder)
       throws AxelorException {
 
+	PricingComputerLogObserver observer = new PricingComputerLogObserver();
     Optional<Pricing> pricing = getRootPricing(saleOrderLine, saleOrder);
     if (pricing.isPresent()) {
       PricingComputer pricingComputer =

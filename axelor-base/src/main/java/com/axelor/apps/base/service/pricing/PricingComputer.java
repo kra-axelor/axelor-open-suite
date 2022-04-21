@@ -48,6 +48,8 @@ public class PricingComputer extends AbstractObservablePricing {
       Model model,
       Product product,
       Class<? extends Model> classModel) {
+
+    super();
     this.context = Objects.requireNonNull(context);
     this.pricing = Objects.requireNonNull(pricing);
     this.product = Objects.requireNonNull(product);
