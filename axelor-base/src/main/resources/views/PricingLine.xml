@@ -171,4 +171,28 @@
       expr="eval: __parent__.result4PricingRule?.scale"/>
   </action-attrs>
 
+  <action-attrs name="action-pricing-line-attrs-set-scale">
+    <attribute name="scale" for="classificationDecParam1"
+      expr="eval: __parent__.class1PricingRule?.scale"
+      if="__parent__.class1PricingRule?.fieldTypeSelect == 1"/>
+    <attribute name="scale" for="classificationDecParam2"
+      expr="eval: __parent__.class2PricingRule?.scale"
+      if="__parent__.class2PricingRule?.fieldTypeSelect == 1"/>
+    <attribute name="scale" for="classificationDecParam3"
+      expr="eval: __parent__.class3PricingRule?.scale"
+      if="__parent__.class3PricingRule?.fieldTypeSelect == 1"/>
+    <attribute name="scale" for="classificationDecParam4"
+      expr="eval: __parent__.class4PricingRule?.scale"
+      if="__parent__.class4PricingRule?.fieldTypeSelect == 1"/>
+
+    <attribute name="scale" for="resultParam1"
+      expr="eval: __parent__.result1PricingRule?.scale"/>
+    <attribute name="scale" for="resultParam2"
+      expr="eval: __parent__.result2PricingRule?.scale"/>
+    <attribute name="scale" for="resultParam3"
+      expr="eval: __parent__.result3PricingRule?.scale"/>
+    <attribute name="scale" for="resultParam4"
+      expr="eval: __parent__.result4PricingRule?.scale"/>
+  </action-attrs>
+
 </object-views>
