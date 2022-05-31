@@ -171,6 +171,8 @@ import com.axelor.apps.account.service.invoice.InvoiceMergingService;
 import com.axelor.apps.account.service.invoice.InvoiceMergingServiceImpl;
 import com.axelor.apps.account.service.invoice.InvoiceService;
 import com.axelor.apps.account.service.invoice.InvoiceServiceImpl;
+import com.axelor.apps.account.service.invoice.generator.InvoiceLineGeneratorService;
+import com.axelor.apps.account.service.invoice.generator.InvoiceLineGeneratorServiceImpl;
 import com.axelor.apps.account.service.invoice.print.InvoicePrintService;
 import com.axelor.apps.account.service.invoice.print.InvoicePrintServiceImpl;
 import com.axelor.apps.account.service.invoice.workflow.cancel.WorkflowCancelService;
@@ -481,5 +483,7 @@ public class AccountModule extends AxelorModule {
     bind(NoteBillsCreateService.class).to(NoteBillsCreateServiceImpl.class);
 
     bind(SimulatedMoveService.class).to(SimulatedMoveServiceImpl.class);
+    
+    bind(InvoiceLineGeneratorService.class).to(InvoiceLineGeneratorServiceImpl.class);
   }
 }

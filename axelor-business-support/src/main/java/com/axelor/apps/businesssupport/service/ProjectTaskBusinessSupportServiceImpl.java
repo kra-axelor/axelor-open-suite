@@ -17,6 +17,11 @@
  */
 package com.axelor.apps.businesssupport.service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.axelor.apps.account.service.invoice.generator.InvoiceLineGeneratorService;
 import com.axelor.apps.base.db.repo.FrequencyRepository;
 import com.axelor.apps.base.db.repo.PriceListLineRepository;
 import com.axelor.apps.base.service.FrequencyService;
@@ -30,9 +35,6 @@ import com.axelor.apps.project.db.ProjectTask;
 import com.axelor.apps.project.db.TaskTemplate;
 import com.axelor.apps.project.db.repo.ProjectTaskRepository;
 import com.google.inject.Inject;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 public class ProjectTaskBusinessSupportServiceImpl extends ProjectTaskBusinessProjectServiceImpl {
 
@@ -45,7 +47,8 @@ public class ProjectTaskBusinessSupportServiceImpl extends ProjectTaskBusinessPr
       PriceListLineRepository priceListLineRepo,
       PriceListService priceListService,
       PartnerPriceListService partnerPriceListService,
-      ProductCompanyService productCompanyService) {
+      ProductCompanyService productCompanyService,
+      InvoiceLineGeneratorService invoiceLineGeneratorService) {
     super(
         projectTaskRepo,
         frequencyRepo,
@@ -54,7 +57,8 @@ public class ProjectTaskBusinessSupportServiceImpl extends ProjectTaskBusinessPr
         priceListLineRepo,
         priceListService,
         productCompanyService,
-        partnerPriceListService);
+        partnerPriceListService,
+        invoiceLineGeneratorService);
   }
 
   @Override

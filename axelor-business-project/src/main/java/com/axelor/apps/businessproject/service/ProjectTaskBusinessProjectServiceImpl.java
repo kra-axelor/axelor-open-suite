@@ -17,9 +17,18 @@
  */
 package com.axelor.apps.businessproject.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.axelor.apps.account.db.Invoice;
 import com.axelor.apps.account.db.InvoiceLine;
 import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.generator.InvoiceLineGeneratorService;
 import com.axelor.apps.base.db.AppBusinessProject;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.Currency;
@@ -55,13 +64,6 @@ import com.axelor.exception.AxelorException;
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
 import com.google.inject.persist.Transactional;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class ProjectTaskBusinessProjectServiceImpl extends ProjectTaskServiceImpl
     implements ProjectTaskBusinessProjectService {
@@ -70,6 +72,7 @@ public class ProjectTaskBusinessProjectServiceImpl extends ProjectTaskServiceImp
   private PriceListService priceListService;
   private PartnerPriceListService partnerPriceListService;
   private ProductCompanyService productCompanyService;
+  protected InvoiceLineGeneratorService invoiceLineGeneratorService;
 
   @Inject
   public ProjectTaskBusinessProjectServiceImpl(
@@ -80,12 +83,14 @@ public class ProjectTaskBusinessProjectServiceImpl extends ProjectTaskServiceImp
       PriceListLineRepository priceListLineRepo,
       PriceListService priceListService,
       ProductCompanyService productCompanyService,
-      PartnerPriceListService partnerPriceListService) {
+      PartnerPriceListService partnerPriceListService,
+      InvoiceLineGeneratorService invoiceLineGeneratorService) {
     super(projectTaskRepo, frequencyRepo, frequencyService, appBaseService);
     this.priceListLineRepo = priceListLineRepo;
     this.priceListService = priceListService;
     this.partnerPriceListService = partnerPriceListService;
     this.productCompanyService = productCompanyService;
+    this.invoiceLineGeneratorService = invoiceLineGeneratorService;
   }
 
   @Override
@@ -234,6 +239,16 @@ public class ProjectTaskBusinessProjectServiceImpl extends ProjectTaskServiceImp
   public List<InvoiceLine> createInvoiceLine(Invoice invoice, ProjectTask projectTask, int priority)
       throws AxelorException {
 
+	InvoiceLine invoiceLine = invoiceLineGeneratorService.creates(invoice, projectTask.getProduct(), projectTask.getName(), projectTask.getUnitPrice(), BigDecimal.ZERO, projectTask.getPriceDiscounted(), projectTask.getDescription(), projectTask.getQuantity(), projectTask.getUnit(), null , priority,projectTask.getDiscountAmount(),
+            projectTask.getDiscountTypeSelect(),
+            projectTask.getExTaxTotal(),
+            BigDecimal.ZERO,
+            false);
+	
+	invoiceLine.setProject(projectTask.getProject());
+	invoiceLine.setSaleOrderLine(projectTask.getSaleOrderLine());
+	
+	projectTask.setInvoiceLine(invoiceLine);
     InvoiceLineGenerator invoiceLineGenerator =
         new InvoiceLineGenerator(
             invoice,
