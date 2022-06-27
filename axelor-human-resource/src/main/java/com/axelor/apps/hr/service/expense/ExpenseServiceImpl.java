@@ -37,7 +37,7 @@ import com.axelor.apps.account.service.AccountingSituationService;
 import com.axelor.apps.account.service.ReconcileService;
 import com.axelor.apps.account.service.analytic.AnalyticMoveLineService;
 import com.axelor.apps.account.service.app.AppAccountService;
-import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.account.service.move.MoveCancelService;
 import com.axelor.apps.account.service.move.MoveCreateService;
 import com.axelor.apps.account.service.move.MoveValidateService;
@@ -115,6 +115,7 @@ public class ExpenseServiceImpl implements ExpenseService {
   protected PaymentModeService paymentModeService;
   protected KilometricService kilometricService;
   protected PeriodRepository periodRepository;
+  protected InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService;
 
   @Inject
   public ExpenseServiceImpl(
@@ -132,7 +133,8 @@ public class ExpenseServiceImpl implements ExpenseService {
       PaymentModeService paymentModeService,
       PeriodRepository periodRepository,
       MoveLineConsolidateService moveLineConsolidateService,
-      KilometricService kilometricService) {
+      KilometricService kilometricService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
 
     this.moveCreateService = moveCreateService;
     this.moveValidateService = moveValidateService;
@@ -149,6 +151,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     this.periodRepository = periodRepository;
     this.moveLineConsolidateService = moveLineConsolidateService;
     this.kilometricService = kilometricService;
+    this.invoiceLineAccountGeneratorService = invoiceLineAccountGeneratorService;
   }
 
   @Override
@@ -739,12 +742,14 @@ public class ExpenseServiceImpl implements ExpenseService {
       throws AxelorException {
 
     Product product = expenseLine.getExpenseProduct();
-    InvoiceLineGenerator invoiceLineGenerator = null;
+    List<InvoiceLine> invoiceLineList = new ArrayList<>();
+
     Integer atiChoice = invoice.getCompany().getAccountConfig().getInvoiceInAtiSelect();
     if (atiChoice == AccountConfigRepository.INVOICE_WT_ALWAYS
         || atiChoice == AccountConfigRepository.INVOICE_WT_DEFAULT) {
-      invoiceLineGenerator =
-          new InvoiceLineGenerator(
+
+      invoiceLineList.add(
+          invoiceLineAccountGeneratorService.create(
               invoice,
               product,
               product.getName(),
@@ -760,22 +765,12 @@ public class ExpenseServiceImpl implements ExpenseService {
               PriceListLineRepository.AMOUNT_TYPE_NONE,
               expenseLine.getUntaxedAmount(),
               expenseLine.getTotalAmount(),
-              false) {
+              false));
 
-            @Override
-            public List<InvoiceLine> creates() throws AxelorException {
-
-              InvoiceLine invoiceLine = this.createInvoiceLine();
-
-              List<InvoiceLine> invoiceLines = new ArrayList<>();
-              invoiceLines.add(invoiceLine);
-
-              return invoiceLines;
-            }
-          };
     } else {
-      invoiceLineGenerator =
-          new InvoiceLineGenerator(
+
+      invoiceLineList.add(
+          invoiceLineAccountGeneratorService.create(
               invoice,
               product,
               product.getName(),
@@ -791,22 +786,10 @@ public class ExpenseServiceImpl implements ExpenseService {
               PriceListLineRepository.AMOUNT_TYPE_NONE,
               expenseLine.getUntaxedAmount(),
               expenseLine.getTotalAmount(),
-              false) {
-
-            @Override
-            public List<InvoiceLine> creates() throws AxelorException {
-
-              InvoiceLine invoiceLine = this.createInvoiceLine();
-
-              List<InvoiceLine> invoiceLines = new ArrayList<>();
-              invoiceLines.add(invoiceLine);
-
-              return invoiceLines;
-            }
-          };
+              false));
     }
 
-    return invoiceLineGenerator.creates();
+    return invoiceLineList;
   }
 
   @Override

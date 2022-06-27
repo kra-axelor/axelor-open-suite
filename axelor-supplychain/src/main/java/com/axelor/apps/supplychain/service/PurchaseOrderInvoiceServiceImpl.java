@@ -30,6 +30,7 @@ import com.axelor.apps.account.service.FiscalPositionAccountService;
 import com.axelor.apps.account.service.config.AccountConfigService;
 import com.axelor.apps.account.service.invoice.generator.InvoiceGenerator;
 import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.Currency;
 import com.axelor.apps.base.db.Partner;
@@ -49,6 +50,7 @@ import com.axelor.apps.supplychain.service.app.AppSupplychainService;
 import com.axelor.apps.supplychain.service.invoice.InvoiceServiceSupplychainImpl;
 import com.axelor.apps.supplychain.service.invoice.generator.InvoiceGeneratorSupplyChain;
 import com.axelor.apps.supplychain.service.invoice.generator.InvoiceLineGeneratorSupplyChain;
+import com.axelor.apps.supplychain.service.invoice.line.ngenerator.InvoiceLineAccountSupplyChainBuilder;
 import com.axelor.common.ObjectUtils;
 import com.axelor.db.JPA;
 import com.axelor.exception.AxelorException;
@@ -77,6 +79,7 @@ public class PurchaseOrderInvoiceServiceImpl implements PurchaseOrderInvoiceServ
   private InvoiceRepository invoiceRepo;
   protected TimetableRepository timetableRepo;
   protected AppSupplychainService appSupplychainService;
+  protected InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService;
 
   protected AccountConfigService accountConfigService;
   protected CommonInvoiceService commonInvoiceService;
@@ -90,7 +93,8 @@ public class PurchaseOrderInvoiceServiceImpl implements PurchaseOrderInvoiceServ
       AppSupplychainService appSupplychainService,
       AccountConfigService accountConfigService,
       CommonInvoiceService commonInvoiceService,
-      AddressService addressService) {
+      AddressService addressService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
     this.invoiceService = invoiceService;
     this.invoiceRepo = invoiceRepo;
     this.timetableRepo = timetableRepo;
@@ -98,6 +102,7 @@ public class PurchaseOrderInvoiceServiceImpl implements PurchaseOrderInvoiceServ
     this.accountConfigService = accountConfigService;
     this.commonInvoiceService = commonInvoiceService;
     this.addressService = addressService;
+    this.invoiceLineAccountGeneratorService = invoiceLineAccountGeneratorService;
   }
 
   @Override
@@ -655,45 +660,26 @@ public class PurchaseOrderInvoiceServiceImpl implements PurchaseOrderInvoiceServ
             (taxLine != null)
                 ? lineAmountToInvoice.add(lineAmountToInvoice.multiply(taxLine.getValue()))
                 : lineAmountToInvoice;
+        PurchaseOrderLine purchaseOrderLine =
+            purchaseOrderLineTax.getPurchaseOrder().getPurchaseOrderLineList().get(0);
 
-        InvoiceLineGenerator invoiceLineGenerator =
-            new InvoiceLineGenerator(
-                invoice,
-                invoicingProduct,
-                invoicingProduct.getName(),
-                lineAmountToInvoice,
-                lineAmountToInvoiceInclTax,
-                invoice.getInAti() ? lineAmountToInvoiceInclTax : lineAmountToInvoice,
-                invoicingProduct.getDescription(),
-                BigDecimal.ONE,
-                invoicingProduct.getUnit(),
-                taxLine,
-                InvoiceLineGenerator.DEFAULT_SEQUENCE,
-                BigDecimal.ZERO,
-                PriceListLineRepository.AMOUNT_TYPE_NONE,
-                lineAmountToInvoice,
-                null,
-                false) {
-              @Override
-              public List<InvoiceLine> creates() throws AxelorException {
-
-                InvoiceLine invoiceLine = this.createInvoiceLine();
-
-                List<InvoiceLine> invoiceLines = new ArrayList<>();
-                invoiceLines.add(invoiceLine);
-
-                return invoiceLines;
-              }
-            };
-
-        List<InvoiceLine> invoiceOneLineList = invoiceLineGenerator.creates();
-        // link to the created invoice line the first line of the sale order.
-        for (InvoiceLine invoiceLine : invoiceOneLineList) {
-          PurchaseOrderLine purchaseOrderLine =
-              purchaseOrderLineTax.getPurchaseOrder().getPurchaseOrderLineList().get(0);
-          invoiceLine.setPurchaseOrderLine(purchaseOrderLine);
-        }
-        createdInvoiceLineList.addAll(invoiceOneLineList);
+        invoiceLineAccountGeneratorService.create(
+            new InvoiceLineAccountSupplyChainBuilder(invoice)
+                .setPurchaseOrderLine(purchaseOrderLine)
+                .setProduct(invoicingProduct)
+                .setProductName(invoicingProduct.getName())
+                .setPrice(lineAmountToInvoice)
+                .setInTaxPrice(lineAmountToInvoiceInclTax)
+                .setPriceDiscounted(
+                    invoice.getInAti() ? lineAmountToInvoiceInclTax : lineAmountToInvoice)
+                .setDescription(invoicingProduct.getDescription())
+                .setQty(BigDecimal.ONE)
+                .setUnit(invoicingProduct.getUnit())
+                .setTaxLine(taxLine)
+                .setSequence(InvoiceLineGenerator.DEFAULT_SEQUENCE)
+                .setDiscountAmount(BigDecimal.ZERO)
+                .setDiscountTypeSelect(PriceListLineRepository.AMOUNT_TYPE_NONE)
+                .setExTaxTotal(lineAmountToInvoice));
       }
     }
     return createdInvoiceLineList;

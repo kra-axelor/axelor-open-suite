@@ -19,6 +19,7 @@ package com.axelor.apps.businessproject.service;
 
 import com.axelor.apps.account.db.Invoice;
 import com.axelor.apps.account.db.InvoiceLine;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.PriceList;
 import com.axelor.apps.base.db.Product;
 import com.axelor.apps.base.service.PriceListService;
@@ -69,7 +70,8 @@ public class TimesheetProjectServiceImpl extends TimesheetServiceImpl
       ProductCompanyService productCompanyService,
       TimesheetLineRepository timesheetlineRepo,
       TimesheetRepository timeSheetRepository,
-      ProjectService projectService) {
+      ProjectService projectService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
     super(
         priceListService,
         appHumanResourceService,
@@ -84,7 +86,8 @@ public class TimesheetProjectServiceImpl extends TimesheetServiceImpl
         productCompanyService,
         timesheetlineRepo,
         timeSheetRepository,
-        projectService);
+        projectService,
+        invoiceLineAccountGeneratorService);
   }
 
   @Override

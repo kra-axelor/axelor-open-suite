@@ -19,7 +19,7 @@ package com.axelor.apps.businessproject.service;
 
 import com.axelor.apps.account.db.Invoice;
 import com.axelor.apps.account.db.InvoiceLine;
-import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.AppBusinessProject;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.Currency;
@@ -36,6 +36,7 @@ import com.axelor.apps.base.service.PriceListService;
 import com.axelor.apps.base.service.ProductCompanyService;
 import com.axelor.apps.base.service.administration.AbstractBatch;
 import com.axelor.apps.base.service.app.AppBaseService;
+import com.axelor.apps.businessproject.service.invoice.line.ngenerator.InvoiceLineAccountBusinessProjectBuilder;
 import com.axelor.apps.project.db.Project;
 import com.axelor.apps.project.db.ProjectStatus;
 import com.axelor.apps.project.db.ProjectTask;
@@ -66,10 +67,11 @@ import java.util.Set;
 public class ProjectTaskBusinessProjectServiceImpl extends ProjectTaskServiceImpl
     implements ProjectTaskBusinessProjectService {
 
-  private PriceListLineRepository priceListLineRepo;
-  private PriceListService priceListService;
-  private PartnerPriceListService partnerPriceListService;
-  private ProductCompanyService productCompanyService;
+  protected PriceListLineRepository priceListLineRepo;
+  protected PriceListService priceListService;
+  protected PartnerPriceListService partnerPriceListService;
+  protected ProductCompanyService productCompanyService;
+  protected InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService;
 
   @Inject
   public ProjectTaskBusinessProjectServiceImpl(
@@ -80,12 +82,14 @@ public class ProjectTaskBusinessProjectServiceImpl extends ProjectTaskServiceImp
       PriceListLineRepository priceListLineRepo,
       PriceListService priceListService,
       ProductCompanyService productCompanyService,
-      PartnerPriceListService partnerPriceListService) {
+      PartnerPriceListService partnerPriceListService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
     super(projectTaskRepo, frequencyRepo, frequencyService, appBaseService);
     this.priceListLineRepo = priceListLineRepo;
     this.priceListService = priceListService;
     this.partnerPriceListService = partnerPriceListService;
     this.productCompanyService = productCompanyService;
+    this.invoiceLineAccountGeneratorService = invoiceLineAccountGeneratorService;
   }
 
   @Override
@@ -234,41 +238,28 @@ public class ProjectTaskBusinessProjectServiceImpl extends ProjectTaskServiceImp
   public List<InvoiceLine> createInvoiceLine(Invoice invoice, ProjectTask projectTask, int priority)
       throws AxelorException {
 
-    InvoiceLineGenerator invoiceLineGenerator =
-        new InvoiceLineGenerator(
-            invoice,
-            projectTask.getProduct(),
-            projectTask.getName(),
-            projectTask.getUnitPrice(),
-            BigDecimal.ZERO,
-            projectTask.getPriceDiscounted(),
-            projectTask.getDescription(),
-            projectTask.getQuantity(),
-            projectTask.getUnit(),
-            null,
-            priority,
-            projectTask.getDiscountAmount(),
-            projectTask.getDiscountTypeSelect(),
-            projectTask.getExTaxTotal(),
-            BigDecimal.ZERO,
-            false) {
+    List<InvoiceLine> invoiceLineList = new ArrayList<>();
+    InvoiceLine invoiceLine =
+        invoiceLineAccountGeneratorService.create(
+            new InvoiceLineAccountBusinessProjectBuilder(invoice)
+                .setProject(projectTask.getProject())
+                .setSaleOrderLine(projectTask.getSaleOrderLine())
+                .setProduct(projectTask.getProduct())
+                .setProductName(projectTask.getName())
+                .setPrice(projectTask.getUnitPrice())
+                .setInTaxPrice(BigDecimal.ZERO)
+                .setPriceDiscounted(projectTask.getPriceDiscounted())
+                .setDescription(projectTask.getDescription())
+                .setQty(projectTask.getQuantity())
+                .setUnit(projectTask.getUnit())
+                .setSequence(priority)
+                .setDiscountAmount(projectTask.getDiscountAmount())
+                .setDiscountTypeSelect(projectTask.getDiscountTypeSelect())
+                .setExTaxTotal(projectTask.getExTaxTotal()));
+    invoiceLineList.add(invoiceLine);
+    projectTask.setInvoiceLine(invoiceLine);
 
-          @Override
-          public List<InvoiceLine> creates() throws AxelorException {
-
-            InvoiceLine invoiceLine = this.createInvoiceLine();
-            invoiceLine.setProject(projectTask.getProject());
-            invoiceLine.setSaleOrderLine(projectTask.getSaleOrderLine());
-            projectTask.setInvoiceLine(invoiceLine);
-
-            List<InvoiceLine> invoiceLines = new ArrayList<InvoiceLine>();
-            invoiceLines.add(invoiceLine);
-
-            return invoiceLines;
-          }
-        };
-
-    return invoiceLineGenerator.creates();
+    return invoiceLineList;
   }
 
   @Override

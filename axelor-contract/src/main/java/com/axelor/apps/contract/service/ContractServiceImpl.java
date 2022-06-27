@@ -31,7 +31,7 @@ import com.axelor.apps.account.service.invoice.InvoiceLineService;
 import com.axelor.apps.account.service.invoice.InvoiceService;
 import com.axelor.apps.account.service.invoice.InvoiceServiceImpl;
 import com.axelor.apps.account.service.invoice.generator.InvoiceGenerator;
-import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.repo.PriceListLineRepository;
 import com.axelor.apps.base.db.repo.PriceListRepository;
 import com.axelor.apps.base.service.DurationService;
@@ -62,7 +62,6 @@ import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -80,6 +79,7 @@ public class ContractServiceImpl extends ContractRepository implements ContractS
   protected ContractVersionService versionService;
   protected ContractLineService contractLineService;
   protected DurationService durationService;
+  protected InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService;
 
   protected ContractLineRepository contractLineRepo;
   protected ConsumptionLineRepository consumptionLineRepo;
@@ -93,7 +93,8 @@ public class ContractServiceImpl extends ContractRepository implements ContractS
       DurationService durationService,
       ContractLineRepository contractLineRepo,
       ConsumptionLineRepository consumptionLineRepo,
-      ContractRepository contractRepository) {
+      ContractRepository contractRepository,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
     this.appBaseService = appBaseService;
     this.versionService = versionService;
     this.contractLineService = contractLineService;
@@ -101,6 +102,7 @@ public class ContractServiceImpl extends ContractRepository implements ContractS
     this.contractLineRepo = contractLineRepo;
     this.consumptionLineRepo = consumptionLineRepo;
     this.contractRepository = contractRepository;
+    this.invoiceLineAccountGeneratorService = invoiceLineAccountGeneratorService;
   }
 
   @Override
@@ -524,8 +526,9 @@ public class ContractServiceImpl extends ContractRepository implements ContractS
 
     BigDecimal inTaxPriceComputed =
         invoiceLineService.convertUnitPrice(false, line.getTaxLine(), line.getPrice());
-    InvoiceLineGenerator invoiceLineGenerator =
-        new InvoiceLineGenerator(
+
+    InvoiceLine invoiceLine =
+        invoiceLineAccountGeneratorService.create(
             invoice,
             line.getProduct(),
             line.getProductName(),
@@ -541,18 +544,7 @@ public class ContractServiceImpl extends ContractRepository implements ContractS
             PriceListLineRepository.AMOUNT_TYPE_NONE,
             line.getExTaxTotal(),
             line.getInTaxTotal(),
-            false) {
-          @Override
-          public List<InvoiceLine> creates() throws AxelorException {
-            InvoiceLine invoiceLine = this.createInvoiceLine();
-
-            List<InvoiceLine> invoiceLines = new ArrayList<>();
-            invoiceLines.add(invoiceLine);
-            return invoiceLines;
-          }
-        };
-
-    InvoiceLine invoiceLine = invoiceLineGenerator.creates().get(0);
+            false);
 
     FiscalPositionAccountService fiscalPositionAccountService =
         Beans.get(FiscalPositionAccountService.class);

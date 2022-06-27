@@ -487,7 +487,7 @@ public class AccountModule extends AxelorModule {
     bind(SimulatedMoveService.class).to(SimulatedMoveServiceImpl.class);
 
     bind(FixedAssetValidateService.class).to(FixedAssetValidateServiceImpl.class);
-    
+
     bind(InvoiceLineAccountGeneratorService.class).to(InvoiceLineAccountGeneratorServiceImpl.class);
-    }
+  }
 }

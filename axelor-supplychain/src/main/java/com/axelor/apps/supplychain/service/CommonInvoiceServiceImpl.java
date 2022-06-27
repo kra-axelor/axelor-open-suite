@@ -21,6 +21,7 @@ import com.axelor.apps.account.db.Invoice;
 import com.axelor.apps.account.db.InvoiceLine;
 import com.axelor.apps.account.db.repo.InvoiceRepository;
 import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.Product;
 import com.axelor.apps.base.db.repo.PriceListLineRepository;
 import com.axelor.apps.supplychain.exception.IExceptionMessage;
@@ -28,12 +29,21 @@ import com.axelor.db.Model;
 import com.axelor.exception.AxelorException;
 import com.axelor.exception.db.repo.TraceBackRepository;
 import com.axelor.i18n.I18n;
+import com.google.inject.Inject;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CommonInvoiceServiceImpl implements CommonInvoiceService {
+
+  protected InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService;
+
+  @Inject
+  public CommonInvoiceServiceImpl(
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
+    this.invoiceLineAccountGeneratorService = invoiceLineAccountGeneratorService;
+  }
 
   @Override
   public BigDecimal computeAmountToInvoicePercent(
@@ -72,8 +82,8 @@ public class CommonInvoiceServiceImpl implements CommonInvoiceService {
             .multiply(inTaxTotal)
             .divide(new BigDecimal("100"), 4, BigDecimal.ROUND_HALF_UP);
 
-    InvoiceLineGenerator invoiceLineGenerator =
-        new InvoiceLineGenerator(
+    invoiceLineList.add(
+        invoiceLineAccountGeneratorService.create(
             invoice,
             invoicingProduct,
             invoicingProduct.getName(),
@@ -89,21 +99,7 @@ public class CommonInvoiceServiceImpl implements CommonInvoiceService {
             PriceListLineRepository.AMOUNT_TYPE_NONE,
             lineAmountToInvoice,
             null,
-            false) {
-          @Override
-          public List<InvoiceLine> creates() throws AxelorException {
-
-            InvoiceLine invoiceLine = this.createInvoiceLine();
-
-            List<InvoiceLine> invoiceLines = new ArrayList<>();
-            invoiceLines.add(invoiceLine);
-
-            return invoiceLines;
-          }
-        };
-
-    List<InvoiceLine> invoiceOneLineList = invoiceLineGenerator.creates();
-    invoiceLineList.addAll(invoiceOneLineList);
+            false));
 
     return invoiceLineList;
   }

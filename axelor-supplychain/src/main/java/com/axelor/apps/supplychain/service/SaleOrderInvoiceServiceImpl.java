@@ -17,13 +17,20 @@
  */
 package com.axelor.apps.supplychain.service;
 
-import com.axelor.apps.account.db.*;
+import com.axelor.apps.account.db.Account;
+import com.axelor.apps.account.db.FiscalPosition;
+import com.axelor.apps.account.db.Invoice;
+import com.axelor.apps.account.db.InvoiceLine;
+import com.axelor.apps.account.db.PaymentCondition;
+import com.axelor.apps.account.db.PaymentMode;
+import com.axelor.apps.account.db.TaxLine;
 import com.axelor.apps.account.db.repo.InvoiceRepository;
 import com.axelor.apps.account.service.FiscalPositionAccountService;
 import com.axelor.apps.account.service.app.AppAccountService;
 import com.axelor.apps.account.service.config.AccountConfigService;
 import com.axelor.apps.account.service.invoice.generator.InvoiceGenerator;
 import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.Currency;
 import com.axelor.apps.base.db.Partner;
@@ -47,6 +54,7 @@ import com.axelor.apps.supplychain.service.app.AppSupplychainService;
 import com.axelor.apps.supplychain.service.invoice.InvoiceServiceSupplychainImpl;
 import com.axelor.apps.supplychain.service.invoice.generator.InvoiceGeneratorSupplyChain;
 import com.axelor.apps.supplychain.service.invoice.generator.InvoiceLineGeneratorSupplyChain;
+import com.axelor.apps.supplychain.service.invoice.line.ngenerator.InvoiceLineAccountSupplyChainBuilder;
 import com.axelor.common.ObjectUtils;
 import com.axelor.db.JPA;
 import com.axelor.db.Query;
@@ -90,6 +98,8 @@ public class SaleOrderInvoiceServiceImpl implements SaleOrderInvoiceService {
 
   protected CommonInvoiceService commonInvoiceService;
 
+  protected InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService;
+
   @Inject
   public SaleOrderInvoiceServiceImpl(
       AppBaseService appBaseService,
@@ -100,7 +110,8 @@ public class SaleOrderInvoiceServiceImpl implements SaleOrderInvoiceService {
       SaleOrderLineService saleOrderLineService,
       StockMoveRepository stockMoveRepository,
       SaleOrderWorkflowService saleOrderWorkflowService,
-      CommonInvoiceService commonInvoiceService) {
+      CommonInvoiceService commonInvoiceService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
 
     this.appBaseService = appBaseService;
     this.appSupplychainService = appSupplychainService;
@@ -111,6 +122,7 @@ public class SaleOrderInvoiceServiceImpl implements SaleOrderInvoiceService {
     this.saleOrderLineService = saleOrderLineService;
     this.saleOrderWorkflowService = saleOrderWorkflowService;
     this.commonInvoiceService = commonInvoiceService;
+    this.invoiceLineAccountGeneratorService = invoiceLineAccountGeneratorService;
   }
 
   @Override
@@ -318,44 +330,25 @@ public class SaleOrderInvoiceServiceImpl implements SaleOrderInvoiceService {
                 ? lineAmountToInvoice.add(lineAmountToInvoice.multiply(taxLine.getValue()))
                 : lineAmountToInvoice;
 
-        InvoiceLineGenerator invoiceLineGenerator =
-            new InvoiceLineGenerator(
-                invoice,
-                invoicingProduct,
-                invoicingProduct.getName(),
-                lineAmountToInvoice,
-                lineAmountToInvoiceInclTax,
-                invoice.getInAti() ? lineAmountToInvoiceInclTax : lineAmountToInvoice,
-                invoicingProduct.getDescription(),
-                BigDecimal.ONE,
-                invoicingProduct.getUnit(),
-                taxLine,
-                InvoiceLineGenerator.DEFAULT_SEQUENCE,
-                BigDecimal.ZERO,
-                PriceListLineRepository.AMOUNT_TYPE_NONE,
-                lineAmountToInvoice,
-                null,
-                false) {
-              @Override
-              public List<InvoiceLine> creates() throws AxelorException {
+        SaleOrderLine saleOrderLine = saleOrderLineTax.getSaleOrder().getSaleOrderLineList().get(0);
 
-                InvoiceLine invoiceLine = this.createInvoiceLine();
-
-                List<InvoiceLine> invoiceLines = new ArrayList<>();
-                invoiceLines.add(invoiceLine);
-
-                return invoiceLines;
-              }
-            };
-
-        List<InvoiceLine> invoiceOneLineList = invoiceLineGenerator.creates();
-        // link to the created invoice line the first line of the sale order.
-        for (InvoiceLine invoiceLine : invoiceOneLineList) {
-          SaleOrderLine saleOrderLine =
-              saleOrderLineTax.getSaleOrder().getSaleOrderLineList().get(0);
-          invoiceLine.setSaleOrderLine(saleOrderLine);
-        }
-        createdInvoiceLineList.addAll(invoiceOneLineList);
+        invoiceLineAccountGeneratorService.create(
+            new InvoiceLineAccountSupplyChainBuilder(invoice)
+                .setSaleOrderLine(saleOrderLine)
+                .setProduct(invoicingProduct)
+                .setProductName(invoicingProduct.getName())
+                .setPrice(lineAmountToInvoice)
+                .setInTaxPrice(lineAmountToInvoiceInclTax)
+                .setPriceDiscounted(
+                    invoice.getInAti() ? lineAmountToInvoiceInclTax : lineAmountToInvoice)
+                .setDescription(invoicingProduct.getDescription())
+                .setQty(BigDecimal.ONE)
+                .setUnit(invoicingProduct.getUnit())
+                .setTaxLine(taxLine)
+                .setSequence(InvoiceLineGenerator.DEFAULT_SEQUENCE)
+                .setDiscountAmount(BigDecimal.ZERO)
+                .setDiscountTypeSelect(PriceListLineRepository.AMOUNT_TYPE_NONE)
+                .setExTaxTotal(lineAmountToInvoice));
       }
     }
     return createdInvoiceLineList;
@@ -371,8 +364,8 @@ public class SaleOrderInvoiceServiceImpl implements SaleOrderInvoiceService {
             .multiply(saleOrder.getInTaxTotal())
             .divide(new BigDecimal("100"), 4, BigDecimal.ROUND_HALF_UP);
 
-    InvoiceLineGenerator invoiceLineGenerator =
-        new InvoiceLineGenerator(
+    invoiceLineList.add(
+        invoiceLineAccountGeneratorService.create(
             invoice,
             invoicingProduct,
             invoicingProduct.getName(),
@@ -388,21 +381,7 @@ public class SaleOrderInvoiceServiceImpl implements SaleOrderInvoiceService {
             PriceListLineRepository.AMOUNT_TYPE_NONE,
             lineAmountToInvoice,
             null,
-            false) {
-          @Override
-          public List<InvoiceLine> creates() throws AxelorException {
-
-            InvoiceLine invoiceLine = this.createInvoiceLine();
-
-            List<InvoiceLine> invoiceLines = new ArrayList<>();
-            invoiceLines.add(invoiceLine);
-
-            return invoiceLines;
-          }
-        };
-
-    List<InvoiceLine> invoiceOneLineList = invoiceLineGenerator.creates();
-    invoiceLineList.addAll(invoiceOneLineList);
+            false));
 
     return invoiceLineList;
   }

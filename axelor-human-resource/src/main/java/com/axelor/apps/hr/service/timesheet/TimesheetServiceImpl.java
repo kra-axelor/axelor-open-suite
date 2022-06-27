@@ -19,7 +19,7 @@ package com.axelor.apps.hr.service.timesheet;
 
 import com.axelor.apps.account.db.Invoice;
 import com.axelor.apps.account.db.InvoiceLine;
-import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.AppTimesheet;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.DayPlanning;
@@ -120,6 +120,7 @@ public class TimesheetServiceImpl extends JpaSupport implements TimesheetService
   protected ProductCompanyService productCompanyService;
   protected TimesheetLineRepository timesheetlineRepo;
   protected TimesheetRepository timeSheetRepository;
+  protected InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService;
   protected ProjectService projectService;
   private ExecutorService executor = Executors.newCachedThreadPool();
   private static final int ENTITY_FIND_TIMEOUT = 10000;
@@ -140,7 +141,8 @@ public class TimesheetServiceImpl extends JpaSupport implements TimesheetService
       ProductCompanyService productCompanyService,
       TimesheetLineRepository timesheetlineRepo,
       TimesheetRepository timeSheetRepository,
-      ProjectService projectService) {
+      ProjectService projectService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
     this.priceListService = priceListService;
     this.appHumanResourceService = appHumanResourceService;
     this.hrConfigService = hrConfigService;
@@ -155,6 +157,7 @@ public class TimesheetServiceImpl extends JpaSupport implements TimesheetService
     this.timesheetlineRepo = timesheetlineRepo;
     this.timeSheetRepository = timeSheetRepository;
     this.projectService = projectService;
+    this.invoiceLineAccountGeneratorService = invoiceLineAccountGeneratorService;
   }
 
   @Override
@@ -687,8 +690,9 @@ public class TimesheetServiceImpl extends JpaSupport implements TimesheetService
       productName += " " + "(" + date + ")";
     }
 
-    InvoiceLineGenerator invoiceLineGenerator =
-        new InvoiceLineGenerator(
+    List<InvoiceLine> invoiceLineList = new ArrayList<>();
+    invoiceLineList.add(
+        invoiceLineAccountGeneratorService.create(
             invoice,
             product,
             productName,
@@ -704,21 +708,9 @@ public class TimesheetServiceImpl extends JpaSupport implements TimesheetService
             discountTypeSelect,
             price.multiply(qtyConverted),
             null,
-            false) {
+            false));
 
-          @Override
-          public List<InvoiceLine> creates() throws AxelorException {
-
-            InvoiceLine invoiceLine = this.createInvoiceLine();
-
-            List<InvoiceLine> invoiceLines = new ArrayList<>();
-            invoiceLines.add(invoiceLine);
-
-            return invoiceLines;
-          }
-        };
-
-    return invoiceLineGenerator.creates();
+    return invoiceLineList;
   }
 
   @Override

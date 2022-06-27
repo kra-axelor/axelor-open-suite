@@ -23,6 +23,7 @@ import com.axelor.apps.account.db.InvoiceLine;
 import com.axelor.apps.account.db.PaymentCondition;
 import com.axelor.apps.account.db.PaymentMode;
 import com.axelor.apps.account.db.repo.InvoiceRepository;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.Currency;
 import com.axelor.apps.base.db.Partner;
@@ -62,7 +63,8 @@ public class SaleOrderInvoiceProjectServiceImpl extends SaleOrderInvoiceServiceI
       StockMoveRepository stockMoveRepository,
       SaleOrderLineService saleOrderLineService,
       SaleOrderWorkflowServiceImpl saleOrderWorkflowServiceImpl,
-      CommonInvoiceService commonInvoiceService) {
+      CommonInvoiceService commonInvoiceService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
     super(
         appBaseService,
         appSupplychainService,
@@ -72,7 +74,8 @@ public class SaleOrderInvoiceProjectServiceImpl extends SaleOrderInvoiceServiceI
         saleOrderLineService,
         stockMoveRepository,
         saleOrderWorkflowServiceImpl,
-        commonInvoiceService);
+        commonInvoiceService,
+        invoiceLineAccountGeneratorService);
     this.appBusinessProjectService = appBusinessProjectService;
   }
 

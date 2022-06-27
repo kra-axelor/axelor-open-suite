@@ -49,4 +49,16 @@ public interface InvoiceLineAccountGeneratorService {
       BigDecimal inTaxTotal,
       boolean isTaxInvoice)
       throws AxelorException;
+
+  /**
+   * This method will only call InvoiceLineBuilder.build method. <br>
+   * The purpose of this method is to be able to add new parameters in the invoiceLine without
+   * creating a new service,especially if this new service would only be needed for the new
+   * parameters and nothing else.
+   *
+   * @param builder
+   * @return invoiceLine
+   * @throws AxelorException
+   */
+  InvoiceLine create(InvoiceLineBuilder builder) throws AxelorException;
 }

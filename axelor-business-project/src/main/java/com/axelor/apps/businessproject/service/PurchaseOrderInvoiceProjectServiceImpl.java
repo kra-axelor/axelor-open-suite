@@ -25,6 +25,7 @@ import com.axelor.apps.account.db.PaymentMode;
 import com.axelor.apps.account.db.repo.InvoiceRepository;
 import com.axelor.apps.account.service.config.AccountConfigService;
 import com.axelor.apps.account.service.invoice.generator.InvoiceLineGenerator;
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.Company;
 import com.axelor.apps.base.db.Currency;
 import com.axelor.apps.base.db.Partner;
@@ -41,6 +42,7 @@ import com.axelor.apps.base.service.PartnerPriceListService;
 import com.axelor.apps.base.service.PriceListService;
 import com.axelor.apps.base.service.ProductCompanyService;
 import com.axelor.apps.businessproject.service.app.AppBusinessProjectService;
+import com.axelor.apps.businessproject.service.invoice.line.ngenerator.InvoiceLineAccountBusinessProjectBuilder;
 import com.axelor.apps.project.db.Project;
 import com.axelor.apps.purchase.db.PurchaseOrder;
 import com.axelor.apps.purchase.db.PurchaseOrderLine;
@@ -83,7 +85,8 @@ public class PurchaseOrderInvoiceProjectServiceImpl extends PurchaseOrderInvoice
       ProductCompanyService productCompanyService,
       AccountConfigService accountConfigService,
       CommonInvoiceService commonInvoiceService,
-      AddressService addressService) {
+      AddressService addressService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
     super(
         invoiceService,
         invoiceRepo,
@@ -91,7 +94,8 @@ public class PurchaseOrderInvoiceProjectServiceImpl extends PurchaseOrderInvoice
         appSupplychainService,
         accountConfigService,
         commonInvoiceService,
-        addressService);
+        addressService,
+        invoiceLineAccountGeneratorService);
     this.priceListService = priceListService;
     this.purchaseOrderLineServiceImpl = purchaseOrderLineServiceImpl;
     this.appBusinessProjectService = appBusinessProjectService;
@@ -158,37 +162,23 @@ public class PurchaseOrderInvoiceProjectServiceImpl extends PurchaseOrderInvoice
         }
       }
 
-      InvoiceLineGenerator invoiceLineGenerator =
-          new InvoiceLineGenerator(
-              invoice,
-              product,
-              (String) productCompanyService.get(product, "name", company),
-              price,
-              price,
-              price,
-              purchaseOrderLine.getDescription(),
-              purchaseOrderLine.getQty(),
-              purchaseOrderLine.getUnit(),
-              null,
-              InvoiceLineGenerator.DEFAULT_SEQUENCE,
-              discountAmount,
-              discountTypeSelect,
-              null,
-              null,
-              false) {
-            @Override
-            public List<InvoiceLine> creates() throws AxelorException {
-
-              InvoiceLine invoiceLine = this.createInvoiceLine();
-              invoiceLine.setProject(purchaseOrderLine.getProject());
-
-              List<InvoiceLine> invoiceLines = new ArrayList<InvoiceLine>();
-              invoiceLines.add(invoiceLine);
-
-              return invoiceLines;
-            }
-          };
-      return invoiceLineGenerator.creates();
+      List<InvoiceLine> invoiceLineList = new ArrayList<>();
+      invoiceLineList.add(
+          invoiceLineAccountGeneratorService.create(
+              new InvoiceLineAccountBusinessProjectBuilder(invoice)
+                  .setProject(purchaseOrderLine.getProject())
+                  .setProduct(product)
+                  .setProductName((String) productCompanyService.get(product, "name", company))
+                  .setPrice(price)
+                  .setInTaxPrice(price)
+                  .setPriceDiscounted(price)
+                  .setDescription(purchaseOrderLine.getDescription())
+                  .setQty(purchaseOrderLine.getQty())
+                  .setUnit(purchaseOrderLine.getUnit())
+                  .setSequence(InvoiceLineGenerator.DEFAULT_SEQUENCE)
+                  .setDiscountAmount(discountAmount)
+                  .setDiscountTypeSelect(discountTypeSelect)));
+      return invoiceLineList;
     } else if (invoice.getPartner().getChargeBackPurchaseSelect()
         == PartnerRepository.CHARGING_BACK_TYPE_PERCENTAGE) {
       price =
@@ -204,37 +194,23 @@ public class PurchaseOrderInvoiceProjectServiceImpl extends PurchaseOrderInvoice
               .setScale(
                   appBusinessProjectService.getNbDecimalDigitForUnitPrice(),
                   BigDecimal.ROUND_HALF_UP);
-      InvoiceLineGenerator invoiceLineGenerator =
-          new InvoiceLineGenerator(
-              invoice,
-              product,
-              (String) productCompanyService.get(product, "name", company),
-              price,
-              price,
-              price,
-              purchaseOrderLine.getDescription(),
-              purchaseOrderLine.getQty(),
-              purchaseOrderLine.getUnit(),
-              null,
-              InvoiceLineGenerator.DEFAULT_SEQUENCE,
-              discountAmount,
-              discountTypeSelect,
-              null,
-              null,
-              false) {
-            @Override
-            public List<InvoiceLine> creates() throws AxelorException {
-
-              InvoiceLine invoiceLine = this.createInvoiceLine();
-              invoiceLine.setProject(purchaseOrderLine.getProject());
-
-              List<InvoiceLine> invoiceLines = new ArrayList<InvoiceLine>();
-              invoiceLines.add(invoiceLine);
-
-              return invoiceLines;
-            }
-          };
-      return invoiceLineGenerator.creates();
+      List<InvoiceLine> invoiceLineList = new ArrayList<>();
+      invoiceLineList.add(
+          invoiceLineAccountGeneratorService.create(
+              new InvoiceLineAccountBusinessProjectBuilder(invoice)
+                  .setProject(purchaseOrderLine.getProject())
+                  .setProduct(product)
+                  .setProductName((String) productCompanyService.get(product, "name", company))
+                  .setPrice(price)
+                  .setInTaxPrice(price)
+                  .setPriceDiscounted(price)
+                  .setDescription(purchaseOrderLine.getDescription())
+                  .setQty(purchaseOrderLine.getQty())
+                  .setUnit(purchaseOrderLine.getUnit())
+                  .setSequence(InvoiceLineGenerator.DEFAULT_SEQUENCE)
+                  .setDiscountAmount(discountAmount)
+                  .setDiscountTypeSelect(discountTypeSelect)));
+      return invoiceLineList;
     } else {
       InvoiceLineGeneratorSupplyChain invoiceLineGenerator =
           new InvoiceLineGeneratorSupplyChain(

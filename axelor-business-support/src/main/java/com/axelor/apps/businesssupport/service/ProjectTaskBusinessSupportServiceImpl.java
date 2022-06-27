@@ -17,6 +17,7 @@
  */
 package com.axelor.apps.businesssupport.service;
 
+import com.axelor.apps.account.service.invoice.line.ngenerator.InvoiceLineAccountGeneratorService;
 import com.axelor.apps.base.db.repo.FrequencyRepository;
 import com.axelor.apps.base.db.repo.PriceListLineRepository;
 import com.axelor.apps.base.service.FrequencyService;
@@ -45,7 +46,8 @@ public class ProjectTaskBusinessSupportServiceImpl extends ProjectTaskBusinessPr
       PriceListLineRepository priceListLineRepo,
       PriceListService priceListService,
       PartnerPriceListService partnerPriceListService,
-      ProductCompanyService productCompanyService) {
+      ProductCompanyService productCompanyService,
+      InvoiceLineAccountGeneratorService invoiceLineAccountGeneratorService) {
     super(
         projectTaskRepo,
         frequencyRepo,
@@ -54,7 +56,8 @@ public class ProjectTaskBusinessSupportServiceImpl extends ProjectTaskBusinessPr
         priceListLineRepo,
         priceListService,
         productCompanyService,
-        partnerPriceListService);
+        partnerPriceListService,
+        invoiceLineAccountGeneratorService);
   }
 
   @Override
