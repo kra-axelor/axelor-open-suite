@@ -28,7 +28,8 @@
 
   <grid name="business-project-task-project-grid" title="Tasks"
     model="com.axelor.apps.project.db.ProjectTask" edit-icon="true" groupBy="typeSelect"
-    orderBy="-priority.technicalTypeSelect">
+    x-tree-field="projectTaskList" widget="tree-grid"
+    orderBy="-createdOn, -priority.technicalTypeSelect">
     <toolbar>
       <button name="addTaskBtn" title="New task" colSpan="2" css="btn-custom text-left"
         icon="fa-plus" onClick="action-business-project-add-task"/>
